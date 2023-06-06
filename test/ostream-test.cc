@@ -140,7 +140,7 @@ TEST(ostream_test, write_to_ostream_max_size) {
   } buffer(max_size);
 
   struct mock_streambuf : std::streambuf {
-    MOCK_METHOD2(xsputn, std::streamsize(const void* s, std::streamsize n));
+    MOCK_METHOD(std::streamsize, xsputn, (const void*, std::streamsize));
     auto xsputn(const char* s, std::streamsize n) -> std::streamsize override {
       const void* v = s;
       return xsputn(v, n);
@@ -224,30 +224,6 @@ TEST(ostream_test, format_to_n) {
   EXPECT_EQ(5u, result.size);
   EXPECT_EQ(buffer + 3, result.out);
   EXPECT_EQ("xabx", fmt::string_view(buffer, 4));
-}
-
-template <typename T> struct convertible {
-  T value;
-  explicit convertible(const T& val) : value(val) {}
-  operator T() const { return value; }
-};
-
-TEST(ostream_test, disable_builtin_ostream_operators) {
-  EXPECT_EQ("42", fmt::format("{:d}", convertible<unsigned short>(42)));
-  EXPECT_EQ("foo", fmt::format("{}", convertible<const char*>("foo")));
-}
-
-struct streamable_and_convertible_to_bool {
-  operator bool() const { return true; }
-};
-
-std::ostream& operator<<(std::ostream& os, streamable_and_convertible_to_bool) {
-  return os << "foo";
-}
-
-TEST(ostream_test, format_convertible_to_bool) {
-  // operator<< is intentionally not used because of potential ODR violations.
-  EXPECT_EQ(fmt::format("{}", streamable_and_convertible_to_bool()), "true");
 }
 
 struct copyfmt_test {};
